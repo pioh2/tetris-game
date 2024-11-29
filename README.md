@@ -1,2 +1,1 @@
-# tetris-game
-A repository for a mobile browser-based classic Tetris game
+This repository is empty. Any task executed on it should be considered a new capability and needs to be created.
