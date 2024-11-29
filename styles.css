@@ -14,6 +14,8 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
+    width: 100%;
+    height: 100%;
 }
 
 #tetris-grid {
@@ -81,4 +83,40 @@ body {
     #score-display, #game-over-message {
         font-size: 18px;
     }
+}
+
+#touch-controls {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+#touch-controls button {
+    width: 50px;
+    height: 50px;
+    margin: 0 10px;
+    font-size: 18px;
+    background-color: #444;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+}
+
+#touch-controls button:active {
+    background-color: #666;
+}
+
+#speed-control {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+#speed-control label {
+    font-size: 18px;
+    margin-right: 10px;
+}
+
+#speed-control input {
+    width: 200px;
 }

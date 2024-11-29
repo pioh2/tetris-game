@@ -2,12 +2,20 @@ const canvas = document.getElementById('tetris-grid');
 const context = canvas.getContext('2d');
 const scoreDisplay = document.getElementById('score-display');
 const gameOverMessage = document.getElementById('game-over-message');
+const leftButton = document.getElementById('left-button');
+const rightButton = document.getElementById('right-button');
+const downButton = document.getElementById('down-button');
+const rotateButton = document.getElementById('rotate-button');
+const speedInput = document.getElementById('speed-input');
 
 const grid = createGrid(20, 10);
 let currentBlock = createBlock();
 let score = 0;
 let gameOver = false;
 let paused = false;
+let dropInterval = 1000;
+let dropCounter = 0;
+let lastTime = 0;
 
 function createGrid(rows, cols) {
     const grid = [];
@@ -150,6 +158,52 @@ function togglePause() {
     paused = !paused;
 }
 
+function update(time = 0) {
+    const deltaTime = time - lastTime;
+    lastTime = time;
+    dropCounter += deltaTime;
+    if (dropCounter > dropInterval) {
+        moveBlockDown();
+        dropCounter = 0;
+    }
+    drawGrid();
+    drawBlock(currentBlock);
+    if (!gameOver) {
+        requestAnimationFrame(update);
+    }
+}
+
+function handleTouchInput(event) {
+    if (!paused && !gameOver) {
+        switch (event.target.id) {
+            case 'left-button':
+                currentBlock.col--;
+                if (collision()) {
+                    currentBlock.col++;
+                }
+                break;
+            case 'right-button':
+                currentBlock.col++;
+                if (collision()) {
+                    currentBlock.col--;
+                }
+                break;
+            case 'down-button':
+                moveBlockDown();
+                break;
+            case 'rotate-button':
+                rotateBlock();
+                break;
+        }
+        drawGrid();
+        drawBlock(currentBlock);
+    }
+}
+
+function handleSpeedInput(event) {
+    dropInterval = 1000 - event.target.value;
+}
+
 document.addEventListener('keydown', handleInput);
 document.addEventListener('keydown', event => {
     if (event.key === 'Escape') {
@@ -157,4 +211,10 @@ document.addEventListener('keydown', event => {
     }
 });
 
-setInterval(moveBlockDown, 1000);
+leftButton.addEventListener('click', handleTouchInput);
+rightButton.addEventListener('click', handleTouchInput);
+downButton.addEventListener('click', handleTouchInput);
+rotateButton.addEventListener('click', handleTouchInput);
+speedInput.addEventListener('input', handleSpeedInput);
+
+update();
