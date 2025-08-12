@@ -2,3 +2,5 @@ python-telegram-bot==21.9
 pytz==2024.2
 pytesseract==0.3.13
 Pillow==11.0.0
+fer==22.4.0
+opencv-python==4.10.0.84

@@ -7,6 +7,8 @@ import io
 from datetime import datetime
 import pytz
 import pytesseract
+import cv2
+import numpy as np
 from PIL import Image
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
@@ -20,6 +22,41 @@ logger = logging.getLogger(__name__)
 # Токен бота
 BOT_TOKEN = "8091069297:AAFbR4Jzdu32qatYNOTq9AqqcUm1564OKQ4"
 
+# Инициализация детектора лиц OpenCV
+face_cascade = None
+
+def get_face_detector():
+    """Ленивая инициализация детектора лиц"""
+    global face_cascade
+    if face_cascade is None:
+        try:
+            face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+        except Exception as e:
+            logger.error(f"Ошибка инициализации детектора лиц: {e}")
+            face_cascade = False
+    return face_cascade
+
+# Простой анализ на основе яркости и контраста
+def analyze_simple_emotion(face_region):
+    """Простой анализ настроения на основе яркости и других параметров"""
+    gray_face = cv2.cvtColor(face_region, cv2.COLOR_BGR2GRAY)
+    
+    # Анализ яркости
+    mean_brightness = np.mean(gray_face)
+    
+    # Анализ контраста
+    contrast = np.std(gray_face)
+    
+    # Простые эвристики для определения настроения
+    if mean_brightness > 140 and contrast > 30:
+        return "Счастливое 😊", 0.7
+    elif mean_brightness < 100:
+        return "Грустное 😢", 0.6
+    elif contrast > 50:
+        return "Напряженное 😟", 0.5
+    else:
+        return "Спокойное 😐", 0.6
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Обработчик команды /start"""
     user = update.effective_user
@@ -27,12 +64,13 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         f"Привет, {user.first_name}! 👋\n\n"
         "Я бот, который:\n"
         "• Отправляет текущее время и ID пира на любое текстовое сообщение\n"
-        "• Извлекает текст из изображений с помощью OCR 📸➡️📝\n\n"
+        "• Извлекает текст из изображений с помощью OCR 📸➡️📝\n"
+        "• Анализирует лица людей на портретах 😊😢😡\n\n"
         "Просто напиши мне сообщение или отправь картинку!"
     )
 
-async def extract_text_from_image(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Извлекает текст из изображения с помощью OCR"""
+async def analyze_image(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Анализирует изображение: извлекает текст и определяет лица"""
     try:
         # Получаем самое большое изображение
         photo = update.message.photo[-1]
@@ -46,29 +84,62 @@ async def extract_text_from_image(update: Update, context: ContextTypes.DEFAULT_
         file_bytes.seek(0)
         
         # Открываем изображение с помощью PIL
-        image = Image.open(file_bytes)
+        pil_image = Image.open(file_bytes)
         
-        # Применяем OCR для извлечения текста
-        # Используем русский и английский языки
-        extracted_text = pytesseract.image_to_string(image, lang='rus+eng')
+        # Формируем ответ
+        response_parts = ["📸 Изображение обработано!\n"]
         
-        # Очищаем текст от лишних пробелов
-        extracted_text = extracted_text.strip()
-        
-        if extracted_text:
-            # Формируем ответ с извлеченным текстом
-            response = (
-                "📸 Изображение обработано!\n"
-                "🔍 Извлеченный текст:\n\n"
-                f"```\n{extracted_text}\n```"
-            )
+        # Анализ лиц
+        detector = get_face_detector()
+        if detector and detector is not False:
+            try:
+                # Конвертируем PIL изображение в numpy array для OpenCV
+                opencv_image = cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
+                gray = cv2.cvtColor(opencv_image, cv2.COLOR_BGR2GRAY)
+                
+                # Детекция лиц
+                faces = detector.detectMultiScale(gray, 1.1, 4)
+                
+                if len(faces) > 0:
+                    response_parts.append(f"👥 Обнаружено лиц: {len(faces)}")
+                    
+                    for i, (x, y, w, h) in enumerate(faces, 1):
+                        # Извлекаем область лица
+                        face_region = opencv_image[y:y+h, x:x+w]
+                        
+                        # Простой анализ настроения
+                        emotion, confidence = analyze_simple_emotion(face_region)
+                        
+                        response_parts.append(f"  {i}. Настроение: {emotion} ({confidence:.1%})")
+                        
+                        # Дополнительная информация о размере лица
+                        face_size = w * h
+                        if face_size > 10000:
+                            response_parts.append(f"     Размер: крупный план")
+                        elif face_size > 5000:
+                            response_parts.append(f"     Размер: средний план")
+                        else:
+                            response_parts.append(f"     Размер: мелкий план")
+                else:
+                    response_parts.append("👤 Лица на изображении не обнаружены")
+            except Exception as e:
+                logger.error(f"Ошибка анализа лиц: {e}")
+                response_parts.append("⚠️ Анализ лиц временно недоступен")
         else:
-            response = (
-                "📸 Изображение обработано!\n"
-                "❌ К сожалению, не удалось извлечь текст из этого изображения.\n"
-                "Возможно, изображение не содержит текста или текст неразборчив."
-            )
+            response_parts.append("⚠️ Анализ лиц недоступен")
         
+        # OCR для извлечения текста
+        file_bytes.seek(0)  # Сбрасываем указатель
+        pil_image_for_ocr = Image.open(file_bytes)
+        extracted_text = pytesseract.image_to_string(pil_image_for_ocr, lang='rus+eng').strip()
+        
+        # OCR результат
+        if extracted_text:
+            response_parts.append(f"\n🔍 Извлеченный текст:\n```\n{extracted_text}\n```")
+        else:
+            response_parts.append("\n📝 Текст на изображении не обнаружен")
+        
+        response = "\n".join(response_parts)
         await update.message.reply_text(response, parse_mode='Markdown')
         
     except Exception as e:
@@ -117,8 +188,8 @@ def main() -> None:
     # Регистрация обработчиков
     application.add_handler(CommandHandler("start", start))
     
-    # Обработчик для изображений
-    application.add_handler(MessageHandler(filters.PHOTO, extract_text_from_image))
+    # Обработчик для изображений (OCR и анализ лиц)
+    application.add_handler(MessageHandler(filters.PHOTO, analyze_image))
     
     # Обработчик для текстовых сообщений (исключая команды)
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, send_time_and_peer_id))
@@ -127,7 +198,7 @@ def main() -> None:
     application.add_error_handler(error_handler)
     
     # Запуск бота
-    logger.info("Запуск бота с поддержкой OCR...")
+    logger.info("Запуск бота с поддержкой OCR и анализа лиц...")
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == '__main__':
