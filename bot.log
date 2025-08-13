@@ -1,0 +1,12 @@
+nohup: ignoring input
+2025-08-13 21:41:02,334 - __main__ - INFO - 🚀 Запуск бота с ML-анализом эмоций...
+2025-08-13 21:41:02,864 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8091069297:AAFbR4Jzdu32qatYNOTq9AqqcUm1564OKQ4/getMe "HTTP/1.1 200 OK"
+2025-08-13 21:41:03,023 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8091069297:AAFbR4Jzdu32qatYNOTq9AqqcUm1564OKQ4/deleteWebhook "HTTP/1.1 200 OK"
+2025-08-13 21:41:03,023 - telegram.ext.Application - INFO - Application started
+2025-08-13 21:41:03,509 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8091069297:AAFbR4Jzdu32qatYNOTq9AqqcUm1564OKQ4/getUpdates "HTTP/1.1 200 OK"
+2025-08-13 21:41:03,667 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8091069297:AAFbR4Jzdu32qatYNOTq9AqqcUm1564OKQ4/getFile "HTTP/1.1 200 OK"
+2025-08-13 21:41:03,981 - httpx - INFO - HTTP Request: GET https://api.telegram.org/file/bot8091069297%3AAAFbR4Jzdu32qatYNOTq9AqqcUm1564OKQ4/photos/file_6.jpg "HTTP/1.1 200 OK"
+2025-08-13 21:41:05,281 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8091069297:AAFbR4Jzdu32qatYNOTq9AqqcUm1564OKQ4/sendMessage "HTTP/1.1 200 OK"
+2025-08-13 21:41:13,670 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8091069297:AAFbR4Jzdu32qatYNOTq9AqqcUm1564OKQ4/getUpdates "HTTP/1.1 200 OK"
+2025-08-13 21:41:23,832 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8091069297:AAFbR4Jzdu32qatYNOTq9AqqcUm1564OKQ4/getUpdates "HTTP/1.1 200 OK"
+2025-08-13 21:41:33,994 - httpx - INFO - HTTP Request: POST https://api.telegram.org/bot8091069297:AAFbR4Jzdu32qatYNOTq9AqqcUm1564OKQ4/getUpdates "HTTP/1.1 200 OK"
